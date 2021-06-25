@@ -1,14 +1,8 @@
-# Coinbase Pro Account Manager
-# Codename: Algorand
-# Author: Tristan "Novixel"
-# v0.10
-# main.py
-
-
-import envVars.env 
+# import envVars.env 
 # we import this to set enviroment variables (provides for easy switching of portfolios)
 
 # ### Debug #########
+from dataclasses import asdict
 import envVars.tenv #
 #####################
 
@@ -18,41 +12,41 @@ from data.user import User
 
 def main():
     '''User() + Connect(User.name, User.api) = Authenticated_Client -> returns Manager(Authenticated_Client)'''
-    user = User()
-    con = Connect(user.name, user.api )
-    man = Manager(con, True)
+    user = User() # Collect User Data From Enviroment
+    con = Connect(user.name, user.api ) # Connect User To Coinbase API
+    man = Manager(con) # Manage Users Coinbase Portfolio
     # Lets get Our Manager To Do Somthing!
     return man
 
 if __name__ == "__main__":
-    # constants for automation
-    pair = 'ALGO-BTC'
-    size = 2
-    minutes = 15
-    buy_limit = 1.6
-    sell_limit = 1.6
-
-    # establish user account
     x = main()
 
-    startTotal = x.Total
-    # base, quote = x.grabAccounts(pair)
+    product_id = "BTC-USDC"
 
-    # print(base.currency)
-    # print(quote.currency)
+    if any(p.id == product_id for p in x.BTCPairs):
+        print("BTCPair: True")
+        BTCPair = True
+    else:
+        print("BTCPair: False")
+        BTCPair = False
 
-    # auto trade timings
-    x.auto_trade(pair, minutes, buy_limit, sell_limit, size , maxTrades=5)
+    if any(p.id == product_id for p in x.NONPairs):
+        print("NONPair: True")
+        NONPair = True
+    else:
+        print("NONPair: False")
+        NONPair = False
 
-    endTotal = x.getTotal()
+    if BTCPair or NONPair:
+        for i in x.Available:
+            for k, v in asdict(i).items():
+                print(k , v )
 
-    finalProfit = endTotal - startTotal
+    # print(x.NONPairs)
+    # print(x.BTCPairs)
 
-    print(f'{startTotal:.8f} - {endTotal:.8f} = {finalProfit:.8f}')
-    print("Total Profit %.8f"%finalProfit)
-    # check the market for fun
-    # p = x.check_market(pair)
+    # for i in range(len(x.Accounts)):
+    #    print(i, x.Accounts[i].currency)
 
-    # test for manual trade
-        #x.make_trade(pair,'buy', size, p)
-        #x.make_trade(pair,'sell', size, p)
+    # for i in range(len(x.Products)):
+    #    print(i, x.Products[i].id)
