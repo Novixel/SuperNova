@@ -1,9 +1,3 @@
-# Coinbase Pro Account Manager
-# Codename: Algorand
-# Author: Tristan "Novixel"
-# v0.10
-# user.py
-
 import os 
 
 class User:

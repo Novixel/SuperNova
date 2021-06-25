@@ -1,9 +1,3 @@
-# Coinbase Pro Account Manager
-# Codename: Algorand
-# Author: Tristan "Novixel"
-# v0.10
-# manager.py
-
 from data.items import AccountItem , ProductItem
 import time
 from datetime import datetime

@@ -1,9 +1,4 @@
-# Coinbase Pro Account Manager
-# Codename: Algorand
-# Author: Tristan "Novixel"
-# v0.10
-# items.py
-
+# Classes for portfolio
 from dataclasses import dataclass, field, InitVar
 
 # Needs to be fine tunned

@@ -4,8 +4,14 @@
 # v0.10
 # main.py
 
+
 import envVars.env 
 # we import this to set enviroment variables (provides for easy switching of portfolios)
+
+# ### Debug #########
+import envVars.tenv #
+#####################
+
 from data.connect import Connect
 from data.manager import Manager
 from data.user import User

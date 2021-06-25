@@ -1,10 +1,5 @@
-# Coinbase Pro Account Manager
-# Codename: Algorand
-# Author: Tristan "Novixel"
-# v0.10
-# connect.py
-
-import os, cbpro
+# Connect To An Authenticated Coinbase Pro Portfolio API
+import cbpro
 from dataclasses import dataclass, field
 
 @dataclass(frozen=True, order=True)
