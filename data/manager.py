@@ -37,11 +37,9 @@ class Manager():
             self.Products.append(ProductItem(a))
 
     def __getTradable(self):
-
         for i in range(len(self.Accounts)):
             if self.Accounts[i].available > 0:
                 self.Available.append(self.Accounts[i])
-
         for i in range(len(self.Products)):
             if "BTC" in self.Products[i].id.split("-"):
                 self.BTCPairs.append(self.Products[i])
@@ -50,6 +48,34 @@ class Manager():
             else:
                 print("Tradable product error :",self.Products[i])
                 raise ValueError
+
+    def check_Pair(self, product_id):
+        if any(p.id == product_id for p in self.BTCPairs):
+            BTCPair = True
+        else:
+            BTCPair = False
+
+        if any(p.id == product_id for p in self.NONPairs):
+            NONPair = True
+        else:
+            NONPair = False
+
+        base = object
+        quote = object
+        
+        if BTCPair or NONPair:
+            b,q =  product_id.split("-")
+            for i in self.Available:
+                if i.currency == b:
+                    base = i
+                if i.currency == q:
+                    quote = i
+            print("\tAvailable For Trade!")
+            print("\t%.8f"%base.available, base.currency)
+            print("\t%.8f"%quote.available, quote.currency)
+            print(base.currency,"/",quote.currency,"pair : BTC | NON\n\t        ",BTCPair,"|",NONPair)
+
+        return base , quote , [BTCPair, NONPair]
 
 
     def make_trade(self, product_pair, side, size, price):

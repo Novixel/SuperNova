@@ -15,32 +15,19 @@ def main():
     user = User() # Collect User Data From Enviroment
     con = Connect(user.name, user.api ) # Connect User To Coinbase API
     man = Manager(con) # Manage Users Coinbase Portfolio
-    # Lets get Our Manager To Do Somthing!
+    # Return The Connected Manager
     return man
 
 if __name__ == "__main__":
+    # Create The Manager
     x = main()
 
-    product_id = "BTC-USDC"
+    # Set Product For Trade!
+    PRODUCT_ID = "BTC-USDC"
 
-    if any(p.id == product_id for p in x.BTCPairs):
-        print("BTCPair: True")
-        BTCPair = True
-    else:
-        print("BTCPair: False")
-        BTCPair = False
-
-    if any(p.id == product_id for p in x.NONPairs):
-        print("NONPair: True")
-        NONPair = True
-    else:
-        print("NONPair: False")
-        NONPair = False
-
-    if BTCPair or NONPair:
-        for i in x.Available:
-            for k, v in asdict(i).items():
-                print(k , v )
+    # Grab The Accounts We Are Gonna Use!
+    base, quote, pairs,  = x.check_Pair(PRODUCT_ID)
+                    
 
     # print(x.NONPairs)
     # print(x.BTCPairs)
