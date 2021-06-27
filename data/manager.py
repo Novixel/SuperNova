@@ -13,6 +13,7 @@ class Manager():
     BUY = 'buy'
     SELL = 'sell'
     ATH = 64899.00
+    LOW = 20000.00
     
     # Lists
     Accounts : list = []
@@ -28,6 +29,7 @@ class Manager():
     last_trade_price : float = 0
     last_trade_side : BUY or SELL
     last_trade_size : float = 0
+    last_filled : dict
 
     def __init__(self, connect):
         '''Connection Object, opt: True  = auto getTotals'''
@@ -88,6 +90,111 @@ class Manager():
         for i in range(len(self.Available)):
            print(i,"%.8f"%self.Available[i].available, self.Available[i].currency)
 
+    def UpdateAccount(self,a:AccountItem):
+        new = self.Client.get_account(a.id)
+        a.update(new)
+
+    def getBidAsk(self, product_id):
+        book = self.Client.get_product_order_book(product_id)
+        for k,v in book.items():
+            if k == "bids":
+                bid = float(v[0][0])
+            if k == "asks":
+                ask = float(v[0][0])
+        return bid, ask
+
+    def Auto_Trader(self,product_id, Max_Loops:int):
+        '''Checks Market Every 5 Min On The Min!'''
+        base, quote, product = self.check_Pair(product_id)
+        Total_Loops = 0
+        Total_Profit = 0
+        Trades = []
+        tick = self.Client.get_product_ticker(product_id)
+        Start_Price = float(tick['price'])
+        while Total_Loops < Max_Loops:
+            # Benchtime and Local Time
+            starttime = time.perf_counter()
+            print("\nStarted:",datetime.utcnow().strftime("%c"),"\n")
+
+            # Gather Market Info
+            bid, ask = self.getBidAsk(product_id)
+            current_price = (bid+ask)/2
+
+            # Gather Last Filled Trade Info
+            last_filled = self.get_last_fill(product_id)
+            last_price = float(last_filled['price'])
+            last_side = last_filled['side']
+
+            # Percent Change
+            change = (current_price - Start_Price)/Start_Price * 100
+            trade_change = (current_price - last_price)/last_price * 100
+
+            # Available Funding Check : How Many Trades Can We Make!
+            if base.available >= product.base_min_size:
+                Total_Sells = (base.available  // product.base_min_size)
+            else:
+                Total_Sells = 0 
+
+            if quote.available > product.base_min_size * current_price:
+                Total_Buys = (quote.available // (product.base_min_size * current_price))
+            else:
+                Total_Buys = 0
+
+            # Send trade if we can
+            if Total_Buys > 4 and change < -10.0:
+                BuyTrade = self.Trade(product_id,self.BUY,bid,product.base_min_size*5)
+                Trades.append(BuyTrade)
+            elif Total_Buys > 2 and change < -5.0:
+                BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size*3))
+                Trades.append(BuyTrade)
+            elif Total_Buys > 1 and change < -2.0:
+                BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size*2))
+                Trades.append(BuyTrade)
+            elif Total_Buys > 0 and change < -1.0:
+                BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size))
+                Trades.append(BuyTrade)
+
+            if Total_Sells > 4 and change > 10.0:
+                SellTrade = self.Trade(product_id,self.SELL,bid,product.base_min_size*5)
+                Trades.append(SellTrade)
+            elif Total_Sells > 2 and change > 5.0:
+                SellTrade = self.Trade(product_id,self.SELL,bid,(product.base_min_size*3))
+                Trades.append(SellTrade)
+            elif Total_Sells > 1 and change > 2.0:
+                SellTrade = self.Trade(product_id,self.SELL,bid,(product.base_min_size*2))
+                Trades.append(SellTrade)
+            elif Total_Sells > 0 and change > 1.0:
+                SellTrade = self.Trade(product_id,self.SELL,bid,(product.base_min_size))
+                Trades.append(SellTrade)
+
+            # Debug info
+            print(f"{Total_Sells}, {Total_Buys}")
+            print(f"        Last Trade Side     = {last_side}")
+            print(f"        Last Trade Change   = {current_price - last_price:.2f}, {quote.currency}")
+            print(f"        Last Trade Percent  = {trade_change:.2f}%\n")
+            print(f" bid: {bid:.2f}, ask: {ask:.2f}, spread: {bid-ask:.2f}, current: {current_price}")
+            print(f"        Amount Change  = {current_price - Start_Price:.2f} {quote.currency}")
+            print(f"        Percent Change = {change:.2f}%\n")
+            print(f"    Current Base  = {base.available:.8f} {base.currency}")
+            print(f"    Current Quote = {quote.available:.2f} {quote.currency} ")
+            print(Trades)
+
+            # Loop Counter & Account Updates
+            Total_Loops += 1
+            self.UpdateAccount(base)
+            self.UpdateAccount(quote)
+            # if datetime.utcnow().minute % 5 == 0:
+            #     pass
+            # benchtime & nap
+            endtime = time.perf_counter()
+            print(f"\nLoop completed in {endtime - starttime:.2f}s",)
+            time.sleep((60 - (endtime - starttime)))
+        else:
+            # End Of While Loop! Retrun Our Profit To The Manager!
+            print("Ended:",datetime.utcnow().strftime("%c"),"\n")
+
+            return Total_Profit , Trades
+
     def Trade(self, product_id, side, price, size):
         '''Send Limit Trade Request'''
         # Place The Trade
@@ -99,7 +206,7 @@ class Manager():
         self.last_trade_size = float(trade["size"])
         return trade
 
-    def Quick_Trade(self, product_id:str, side, size):
+    def Market_Trade(self, product_id, side, size):
         # Get Current Market Price
         price = float(self.Client.get_product_ticker(product_id)['price'])
         # Place The Trade
@@ -112,20 +219,12 @@ class Manager():
             order = self.Client.get_order(trade["id"])
             return order
 
-    def Safe_Trade(self, product_id, side, price, size):
-        # Check The Order
-        if self.last_trade_id != 'trade_id':
-            last_order = self.Client.get_order(self.last_trade_id)
-        # and Status
-        if last_order['status'] == 'open':
-            print("last order is open!")
-            return last_order
-        elif last_order['status'] == 'done':
-            print("last order is done")
-        else:
-            trade = self.Trade(product_id,side,price,size)
-            # Grab That Trade From The Order Book
-            return self.Client.get_order(trade["id"])
+    def get_last_fill(self, product_id):
+        fills = self.Client.get_fills(product_id)
+        for i in fills:
+            self.last_filled = i
+            break
+        return self.last_filled
 
     def check_Pair(self, product_id):
         '''Check Product Pair Before You Trade! 

@@ -10,43 +10,42 @@ import envVars.tenv #
 from data.connect import Connect
 from data.manager import Manager
 from data.user import User
+from datetime import datetime
 
 
-def main():
+def man():
     '''User() + Connect(User.name, User.api) = Authenticated_Client -> returns Manager(Authenticated_Client)'''
     user = User() # Collect User Data From Enviroment
     con = Connect(user.name, user.api ) # Connect User To Coinbase API
     # Return The Connected Manager
     return Manager(con)
 
-def fills(x:Manager,base:AccountItem, quote:AccountItem, product:ProductItem):
-    fills = x.Client.get_fills(product.id)
-    for i in fills:
-        last_filled = i
-        break
-    print(last_filled["price"])
+def main():
+    # import cProfile
+    # import pstats
 
+    # with cProfile.Profile() as pr:
+    #     man()
+    # stats = pstats.Stats(pr)
+    # stats.sort_stats(pstats.SortKey.TIME)
+    # stats.print_stats()
 
-if __name__ == "__main__":
-    # Call The Manager To Work
-    x = main()
-
+    x = man()
     # Set Product For Trade
     PRODUCT_ID = "BTC-USDC"
+    MAX_LOOPS = 60*8
 
     # Grab The Accounts From Our Product Pair
-    base, quote, product  = x.check_Pair(PRODUCT_ID)
+    # base, quote, product  = x.check_Pair(PRODUCT_ID)
 
-    # Get Mininum Trade Size
-    BASEMIN = product.base_min_size
-    QUOTEMIN = product.min_market_funds
+    # Testing Auto Trade
+    profit, trades = x.Auto_Trader(PRODUCT_ID,MAX_LOOPS)
 
-    # Make Test Trade
-    for i in range(3):
-        trade_order = x.Attempt_Trade(product_id=PRODUCT_ID, side=x.SELL, price=x.ATH ,size=BASEMIN)
-        print(trade_order)
-    # We Can Grab Balances Seperatly If We Need to Do Other Math
-    # base_bal, quote_bal , start_bal = x.getBalance(base, quote, PRODUCT_ID)
+    for i in trades:
+        print(i)
+
+if __name__ == "__main__":
+    main()
 
 
 
