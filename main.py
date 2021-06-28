@@ -33,13 +33,16 @@ def main():
     x = man()
     # Set Product For Trade
     PRODUCT_ID = "BTC-USDC"
-    MAX_LOOPS = 60*8
+    MAX_LOOPS = 60*1
 
     # Grab The Accounts From Our Product Pair
     # base, quote, product  = x.check_Pair(PRODUCT_ID)
+    
+    # a simple trade
+    # trades = x.Trade(PRODUCT_ID,x.SELL,x.ATH,0.00001)
 
     # Testing Auto Trade
-    profit, trades = x.Auto_Trader(PRODUCT_ID,MAX_LOOPS)
+    trades = x.Auto_Trader(PRODUCT_ID,MAX_LOOPS)
 
     for i in trades:
         print(i)

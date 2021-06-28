@@ -25,7 +25,7 @@ class Manager():
     Available : list = []
 
     # Trade Variables
-    last_trade_id : str = 'trade_id'
+    last_trade_id : str
     last_trade_price : float = 0
     last_trade_side : BUY or SELL
     last_trade_size : float = 0
@@ -107,7 +107,6 @@ class Manager():
         '''Checks Market Every 5 Min On The Min!'''
         base, quote, product = self.check_Pair(product_id)
         Total_Loops = 0
-        Total_Profit = 0
         Trades = []
         tick = self.Client.get_product_ticker(product_id)
         Start_Price = float(tick['price'])
@@ -140,44 +139,47 @@ class Manager():
             else:
                 Total_Buys = 0
 
+            BuyTrade = {'message': 'default'}
+            SellTrade = {'message': 'default'}
+
             # Send trade if we can
             if Total_Buys > 4 and change < -10.0:
                 BuyTrade = self.Trade(product_id,self.BUY,bid,product.base_min_size*5)
-                Trades.append(BuyTrade)
             elif Total_Buys > 2 and change < -5.0:
                 BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size*3))
-                Trades.append(BuyTrade)
-            elif Total_Buys > 1 and change < -2.0:
+            elif Total_Buys > 1 and change < -2.0 and last_price > bid:
                 BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size*2))
-                Trades.append(BuyTrade)
-            elif Total_Buys > 0 and change < -1.0:
+            elif Total_Buys > 0 and change < -1.25 and last_price > bid:
                 BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size))
-                Trades.append(BuyTrade)
 
             if Total_Sells > 4 and change > 10.0:
-                SellTrade = self.Trade(product_id,self.SELL,bid,product.base_min_size*5)
-                Trades.append(SellTrade)
+                SellTrade = self.Trade(product_id,self.SELL,ask,product.base_min_size*5)
             elif Total_Sells > 2 and change > 5.0:
-                SellTrade = self.Trade(product_id,self.SELL,bid,(product.base_min_size*3))
-                Trades.append(SellTrade)
-            elif Total_Sells > 1 and change > 2.0:
-                SellTrade = self.Trade(product_id,self.SELL,bid,(product.base_min_size*2))
-                Trades.append(SellTrade)
-            elif Total_Sells > 0 and change > 1.0:
-                SellTrade = self.Trade(product_id,self.SELL,bid,(product.base_min_size))
-                Trades.append(SellTrade)
+                SellTrade = self.Trade(product_id,self.SELL,ask,(product.base_min_size*3))
+            elif Total_Sells > 1 and change > 2.5 and last_price < ask:
+                SellTrade = self.Trade(product_id,self.SELL,ask,(product.base_min_size*2))
+            elif Total_Sells > 0 and change > 2 and last_price < ask:
+                SellTrade = self.Trade(product_id,self.SELL,ask,(product.base_min_size))
+
+            if 'message' not in SellTrade.keys():
+                Trades.append({SellTrade['side'],SellTrade['size'],SellTrade['price']})
+                Start_Price = current_price
+
+            if 'message' not in BuyTrade.keys():
+                Trades.append({BuyTrade['side'],BuyTrade['size'],BuyTrade['price']})
+                Start_Price = current_price
 
             # Debug info
-            print(f"{Total_Sells}, {Total_Buys}")
+            print(f"{Total_Sells = }, {Total_Buys = }")
             print(f"        Last Trade Side     = {last_side}")
-            print(f"        Last Trade Change   = {current_price - last_price:.2f}, {quote.currency}")
+            print(f"        Last Trade Change   = {current_price - last_price:.8f}, {quote.currency}")
             print(f"        Last Trade Percent  = {trade_change:.2f}%\n")
             print(f" bid: {bid:.2f}, ask: {ask:.2f}, spread: {bid-ask:.2f}, current: {current_price}")
             print(f"        Amount Change  = {current_price - Start_Price:.2f} {quote.currency}")
             print(f"        Percent Change = {change:.2f}%\n")
             print(f"    Current Base  = {base.available:.8f} {base.currency}")
             print(f"    Current Quote = {quote.available:.2f} {quote.currency} ")
-            print(Trades)
+            print("Trades:",Trades)
 
             # Loop Counter & Account Updates
             Total_Loops += 1
@@ -192,18 +194,20 @@ class Manager():
         else:
             # End Of While Loop! Retrun Our Profit To The Manager!
             print("Ended:",datetime.utcnow().strftime("%c"),"\n")
-
-            return Total_Profit , Trades
+            return Trades
 
     def Trade(self, product_id, side, price, size):
         '''Send Limit Trade Request'''
         # Place The Trade
-        trade = self.Client.place_limit_order(product_id, side, price, size)
+        trade: dict = self.Client.place_limit_order(product_id, side, price, size)
         # Set Recent Trade Variables
-        self.last_trade_id = str(trade["id"])
-        self.last_trade_side = str(trade["side"])
-        self.last_trade_price = float(trade["price"])
-        self.last_trade_size = float(trade["size"])
+        if 'message' in trade.keys():
+            print(trade)
+        else:
+            self.last_trade_id = str(trade["id"])
+            self.last_trade_side = str(trade["side"])
+            self.last_trade_price = float(trade["price"])
+            self.last_trade_size = float(trade["size"])
         return trade
 
     def Market_Trade(self, product_id, side, size):
