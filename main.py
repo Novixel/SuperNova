@@ -1,17 +1,11 @@
-# import envVars.env 
-# we import this to set enviroment variables (provides for easy switching of portfolios)
-
-# ### Debug #########
-from data.items import AccountItem, ProductItem
-from dataclasses import asdict
-import envVars.tenv #
-#####################
+from time import sleep
+import envVars.env 
+# we import this to set enviroment variables
 
 from data.connect import Connect
 from data.manager import Manager
 from data.user import User
 from datetime import datetime
-
 
 def man():
     '''User() + Connect(User.name, User.api) = Authenticated_Client -> returns Manager(Authenticated_Client)'''
@@ -20,33 +14,36 @@ def man():
     # Return The Connected Manager
     return Manager(con)
 
-def main():
-    # import cProfile
-    # import pstats
-
-    # with cProfile.Profile() as pr:
-    #     man()
-    # stats = pstats.Stats(pr)
-    # stats.sort_stats(pstats.SortKey.TIME)
-    # stats.print_stats()
-
-    x = man()
-    # Set Product For Trade
-    PRODUCT_ID = "BTC-USDC"
-    MAX_LOOPS = 60*1
-
-    # Grab The Accounts From Our Product Pair
-    # base, quote, product  = x.check_Pair(PRODUCT_ID)
-    
-    # a simple trade
-    # trades = x.Trade(PRODUCT_ID,x.SELL,x.ATH,0.00001)
-
-    # Testing Auto Trade
-    trades = x.Auto_Trader(PRODUCT_ID,MAX_LOOPS)
-
+def autoTrade(manager:Manager):
+    product_id:str = "BTC-USDC"
+    minSell:int = 2
+    maxSell:int = 10
+    minBuy:int = 2
+    maxBuy:int = 10
+    Max_Loops:int = 60*12
+    trades = manager.Auto_Trader(product_id,minSell,maxSell,minBuy,maxBuy,Max_Loops)
     for i in trades:
         print(i)
+    return trades
 
+def main():
+    x = man()
+    start = True
+    trades = None
+    while start:
+        getTime = datetime.utcnow()
+        disTime = getTime.strftime("%c")
+        if getTime.minute % 5 == 0:
+            print("Bot Starting :",disTime)
+            trades = autoTrade(x)
+            start = True if input("Start Again?\ny/n: ") in ["yes","y","ye","yup",] else start = False
+    else:
+        getTime = datetime.utcnow()
+        disTime = getTime.strftime("%c")
+        with open((disTime + "trades.txt"),"w") as a:
+            a.write(trades)
+        print('saved to file',disTime)
+        
 if __name__ == "__main__":
     main()
 

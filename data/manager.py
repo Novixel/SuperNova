@@ -12,8 +12,6 @@ class Manager():
     # Constants
     BUY = 'buy'
     SELL = 'sell'
-    ATH = 64899.00
-    LOW = 20000.00
     
     # Lists
     Accounts : list = []
@@ -103,7 +101,7 @@ class Manager():
                 ask = float(v[0][0])
         return bid, ask
 
-    def Auto_Trader(self,product_id, Max_Loops:int):
+    def Auto_Trader(self,product_id, minSell:int, maxSell:int, minBuy:int,maxBuy:int, Max_Loops:int):
         '''Checks Market Every 5 Min On The Min!'''
         base, quote, product = self.check_Pair(product_id)
         Total_Loops = 0
@@ -143,22 +141,18 @@ class Manager():
             SellTrade = {'message': 'default'}
 
             # Send trade if we can
-            if Total_Buys > 4 and change < -10.0:
+            if Total_Buys > 4 and change < -maxBuy:
                 BuyTrade = self.Trade(product_id,self.BUY,bid,product.base_min_size*5)
-            elif Total_Buys > 2 and change < -5.0:
-                BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size*3))
-            elif Total_Buys > 1 and change < -2.0 and last_price > bid:
+            elif Total_Buys > 1 and change < -(minBuy + maxBuy / 2) and last_price > bid:
                 BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size*2))
-            elif Total_Buys > 0 and change < -1.25 and last_price > bid:
+            elif Total_Buys > 0 and change < -minBuy and last_price > bid:
                 BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size))
 
-            if Total_Sells > 4 and change > 10.0:
+            if Total_Sells > 4 and change > maxSell:
                 SellTrade = self.Trade(product_id,self.SELL,ask,product.base_min_size*5)
-            elif Total_Sells > 2 and change > 5.0:
-                SellTrade = self.Trade(product_id,self.SELL,ask,(product.base_min_size*3))
-            elif Total_Sells > 1 and change > 2.5 and last_price < ask:
+            elif Total_Sells > 1 and change > (minSell + maxSell / 2) and last_price < ask:
                 SellTrade = self.Trade(product_id,self.SELL,ask,(product.base_min_size*2))
-            elif Total_Sells > 0 and change > 2 and last_price < ask:
+            elif Total_Sells > 0 and change > minSell and last_price < ask:
                 SellTrade = self.Trade(product_id,self.SELL,ask,(product.base_min_size))
 
             if 'message' not in SellTrade.keys():
