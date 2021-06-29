@@ -179,6 +179,7 @@ class Manager():
             Total_Loops += 1
             self.UpdateAccount(base)
             self.UpdateAccount(quote)
+            self.getBalance(base, quote, product_id)
             # if datetime.utcnow().minute % 5 == 0:
             #     pass
             # benchtime & nap
@@ -269,17 +270,3 @@ class Manager():
         print("(BASE)  Total Balance:",start_bal, base.currency)
         print("(QUOTE) Total Balance:",start_bal * float(price["price"]), quote.currency)
         return base_bal, quote_bal , start_bal
-
-
-    def make_trade(self, product_pair, side, size, price):
-        print("Sending " + side + " Trade On", product_pair + " @ " + "%.8f"%price + " with " + str(size), product_pair.split("-",0))
-        # self.trade = self.Client.place_order(
-        #     product_id= product_pair,
-        #     side= side, 
-        #     order_type= 'limit',
-        #     price= price , 
-        #     size= size
-        #     )
-        # print("\nTrade Request Sent!")
-        # for k,v in self.trade.items():
-        #     print(k,"=\t",v)
