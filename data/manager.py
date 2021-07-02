@@ -103,6 +103,98 @@ class Manager():
                 ask = float(v[0][0])
         return bid, ask
 
+    def Spec_Trader(self, product_id:str, Hours:float, buy_limit:float, sell_limit:float, size:float, maxTrades:int = 4):
+        '''Checks Market Every 5 Min On The Min!'''
+        base, quote, product = self.check_Pair(product_id)
+        Total_Loops = 0
+        stime = round(time.time())
+        etime = stime + Hours * 60
+        Trades = []
+        curTrades = 0
+        tick = self.Client.get_product_ticker(product_id)
+        Start_Price = float(tick['price'])
+        while etime - round(time.time()) >= 0:
+            # Benchtime and Local Time
+            starttime = time.perf_counter()
+            print("\nStarted:",datetime.utcnow().strftime("%c"),"\n")
+
+            # Gather Market Info
+            bid, ask = self.getBidAsk(product_id)
+            current_price = (bid+ask)/2
+
+            # Gather Last Filled Trade Info
+            last_filled = self.get_last_fill(product_id)
+            last_price = float(last_filled['price'])
+            last_side = last_filled['side']
+
+            # Percent Change
+            change = (current_price - Start_Price)/Start_Price * 100
+            trade_change = (current_price - last_price)/last_price * 100
+
+            # Available Funding Check : How Many Trades Can We Make!
+            if base.available >= product.base_min_size:
+                Total_Sells = (base.available  // product.base_min_size)
+            else:
+                Total_Sells = 0 
+
+            if quote.available > product.base_min_size * current_price:
+                Total_Buys = (quote.available // (product.base_min_size * current_price))
+            else:
+                Total_Buys = 0
+
+            BuyTrade = {'message': 'default'}
+            SellTrade = {'message': 'default'}
+
+            # Send trade if we can
+            if Total_Buys > 0 and change <= buy_limit and last_price > bid:
+                BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size*size))
+
+            if Total_Sells > 0 and change >= sell_limit and last_price < ask:
+                SellTrade = self.Trade(product_id,self.SELL,ask,(product.base_min_size*size))
+
+            if 'message' not in SellTrade.keys():
+                Trades.append({SellTrade['side'],SellTrade['size'],SellTrade['price']})
+                curTrades += 1
+                if maxTrades <= curTrades:
+                    print("resetting Start Price")
+                    Start_Price = current_price
+                    curTrades = 0
+
+            if 'message' not in BuyTrade.keys():
+                Trades.append({BuyTrade['side'],BuyTrade['size'],BuyTrade['price']})
+                curTrades += 1
+                if maxTrades <= curTrades:
+                    print("resetting Start Price")
+                    Start_Price = current_price
+                    curTrades = 0
+
+            # Debug info
+            print(f"{Total_Sells = }, {Total_Buys = }")
+            print(f"        Last Trade Side     = {last_side}")
+            print(f"        Last Trade Change   = {current_price - last_price:.8f}, {quote.currency}")
+            print(f"        Last Trade Percent  = {trade_change:.2f}%\n")
+            print(f" bid: {bid:.2f}, ask: {ask:.2f}, spread: {bid-ask:.2f}, current: {current_price}")
+            print(f"        Amount Change  = {current_price - Start_Price:.2f} {quote.currency}")
+            print(f"        Percent Change = {change:.2f}%\n")
+            print(f"    Current Base  = {base.available:.8f} {base.currency}")
+            print(f"    Current Quote = {quote.available:.2f} {quote.currency} ")
+            print("Trades:",Trades)
+
+            # Loop Counter & Account Updates
+            Total_Loops += 1
+            self.UpdateAccount(base)
+            self.UpdateAccount(quote)
+            # if datetime.utcnow().minute % 5 == 0:
+            #     pass
+            # benchtime & nap
+            endtime = time.perf_counter()
+            print(f"\nLoop completed in {endtime - starttime:.2f}s",)
+            time.sleep((60 - (endtime - starttime)))
+        else:
+            # End Of While Loop! Retrun Our Profit To The Manager!
+            print("Ended:",datetime.utcnow().strftime("%c"),"\n")
+            return Trades
+
     def Auto_Trader(self,product_id, Max_Loops:int):
         '''Checks Market Every 5 Min On The Min!'''
         base, quote, product = self.check_Pair(product_id)
