@@ -12,8 +12,6 @@ class Manager():
     # Constants
     BUY = 'buy'
     SELL = 'sell'
-    ATH = 64899.00
-    LOW = 20000.00
     
     # Lists
     Accounts : list = []
@@ -32,7 +30,7 @@ class Manager():
     last_filled : dict
 
     def __init__(self, connect):
-        '''Connection Object, opt: True  = auto getTotals'''
+        '''Connection Object'''
         self.Connection = connect
         self.User = self.Connection.name
         self.Client : AuthenticatedClient = self.Connection.client()
@@ -368,9 +366,9 @@ class Manager():
         print("(QUOTE) Total Balance:",start_bal * float(price["price"]), quote.currency)
         return base_bal, quote_bal , start_bal
 
-
-    def make_trade(self, product_pair, side, size, price):
+    def fake_trade(self, product_pair, side, size, price):
         print("Sending " + side + " Trade On", product_pair + " @ " + "%.8f"%price + " with " + str(size), product_pair.split("-",0))
+        return side, size, price
         # self.trade = self.Client.place_order(
         #     product_id= product_pair,
         #     side= side, 

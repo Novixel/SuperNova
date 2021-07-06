@@ -9,3 +9,10 @@ class User:
         d = os.environ["USER"]
         self.api = [a,b,c]
         self.name = d
+
+    def SaveUser(self):
+        username = self.name
+        password = input('set a secure password') or None
+        if password is not None:
+            with open((username+".usr"),"w") as user:
+                user.writelines([username+"\n",password])
