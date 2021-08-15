@@ -1,5 +1,5 @@
-def Timer():
-    str_seconds = input("Please enter the number of seconds you wish to convert")
+def Timer(seconds):
+    str_seconds = seconds
     total_secs = int(str_seconds)
 
     hours = total_secs // 3600
@@ -8,3 +8,4 @@ def Timer():
     secs_finally_remaining = secs_still_remaining  % 60
 
     print("Hrs=", hours, "mins=", minutes, "secs=", secs_finally_remaining)
+    return hours, minutes, secs_finally_remaining

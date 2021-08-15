@@ -52,7 +52,7 @@ class Manager():
 
     def __getTradable(self):
         for i in range(len(self.Accounts)):
-            if self.Accounts[i].available > 0:
+            if self.Accounts[i].available >= 0:
                 self.Available.append(self.Accounts[i])
         for i in range(len(self.Products)):
             if "BTC" in self.Products[i].id.split("-"):
@@ -194,7 +194,7 @@ class Manager():
             return Trades
 
     def Auto_Trader(self,product_id, Max_Loops:int):
-        '''Checks Market Every 5 Min On The Min!'''
+        '''AutoTrade till max loops are hit, loop every min'''
         base, quote, product = self.check_Pair(product_id)
         Total_Loops = 0
         Trades = []
@@ -237,9 +237,9 @@ class Manager():
                 BuyTrade = self.Trade(product_id,self.BUY,bid,product.base_min_size*5)
             elif Total_Buys > 2 and change < -5.0:
                 BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size*3))
-            elif Total_Buys > 1 and change < -2.0 and last_price > bid:
+            elif Total_Buys > 1 and change < -2.5 and last_price > bid:
                 BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size*2))
-            elif Total_Buys > 0 and change < -1.25 and last_price > bid:
+            elif Total_Buys > 0 and change < -2 and last_price > bid:
                 BuyTrade = self.Trade(product_id,self.BUY,bid,(product.base_min_size))
 
             if Total_Sells > 4 and change > 10.0:
@@ -337,8 +337,8 @@ class Manager():
         else:
             NONPair = False
 
-        base = object
-        quote = object
+        base = AccountItem
+        quote = AccountItem
         
         if BTCPair or NONPair:
             b,q =  product_id.split("-")
@@ -368,7 +368,7 @@ class Manager():
 
     def fake_trade(self, product_pair, side, size, price):
         print("Sending " + side + " Trade On", product_pair + " @ " + "%.8f"%price + " with " + str(size), product_pair.split("-",0))
-        return side, size, price
+        return (side, size, price)
         # self.trade = self.Client.place_order(
         #     product_id= product_pair,
         #     side= side, 
